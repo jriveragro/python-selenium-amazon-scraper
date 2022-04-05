@@ -1,13 +1,21 @@
-### Import all necessary selenium and webdriver libraries to handle the actions being
+### Import all necessary selenium, webdriver and other libraries/modules to handle the actions being
 ### performed by the scraper.
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
-import time
+import pandas as pd
+import csv
+from selenium.webdriver.common.action_chains import ActionChains
 
-### Declare a variable and assign to it the path where chrome driver is located.
-### srvc = 'C:\\Users\\Jesus\\Dev\\Python\\Data Scraper\\amazon\\drivers\\chromedriver.exe'
+data = [] 
+itemsDF = pd.DataFrame(data)
+
+### From the input file, read the number of pages to go through in the Today's Deals section.
+with open('input//input_numberOfPages.csv', 'r') as inputFile:
+    inputContent = csv.reader(inputFile)
+    for line in inputContent:
+        numberOfPages = line[0]
 
 ### Instantiate a variable and assign it the chromeoptions class from the webdriver in order to 
 ### have chrome specific methods and capabilities available.
@@ -29,17 +37,41 @@ driver.maximize_window()
 driver.get('https://www.amazon.com/')
 
 ### Click on the See all deals link.
-driver.find_element_by_link_text('Today\'s Deals').click()
+driver.find_element(By.LINK_TEXT, 'Today\'s Deals').click()
 
-### Get the container that holds the deals in the page.
-selector = 'div[data-testid="grid-deals-container"]'
-dealsContainer = driver.find_element(By.CSS_SELECTOR, selector)
+### Use the number taken from the input file to loop through the pages in the Deals.
+### NOTE: Remember that the landing page on the Deals section is page #1.
+for page in range(int(numberOfPages)):
 
-### Print-out the count of deals in the page
-selector1 = 'div[data-testid="deal-card"]'
-dealCards = dealsContainer.find_elements(By.CSS_SELECTOR, selector1)
+    ### Scroll down to where the Next button is visible.
+    nextButton = driver.find_element(By.LINK_TEXT, 'Next')
+    actions = ActionChains(driver)
+    actions.move_to_element(nextButton).perform()
 
-print(f'Showing a total of {len(dealCards)} items in the first page')
+    ### Find and get the container that holds the deals in the page.
+    mainDealsContainerSelector = 'div[data-testid="grid-deals-container"]'
+    mainDealsContainer = driver.find_element(By.CSS_SELECTOR, mainDealsContainerSelector)
 
+    ### Find and get each of the individual deal containers.
+    dealContainer = 'div[data-testid="deal-card"]'
+    dealCards = mainDealsContainer.find_elements(By.CSS_SELECTOR, dealContainer)
+
+    ### Instantiate two a variables and assign them the selector with which the price and description of the item will be found.
+    itemPricesSelector = 'span[class="a-price-whole"]'
+    itemDescriptionSelector = 'div[class*="DealContent-module"]'
+     
+    for deal in dealCards:
+        itemDescription = deal.find_element(By.CSS_SELECTOR, itemDescriptionSelector) 
+        spans = deal.find_elements(By.CSS_SELECTOR, itemPricesSelector)
+        if len(spans) == 2:
+            ### Instantiate a list where pricess will store temporarily.
+
+            prices = [] 
+            for span in spans:
+                ## Create a list of the items being scraped.
+                prices.append(span.text)
+
+            data.append([prices[0], prices[1], itemDescription.text])
+                
 ### Close browser.
 driver.close()
