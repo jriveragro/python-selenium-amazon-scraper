@@ -1,12 +1,14 @@
 ### Import all necessary selenium, webdriver and other libraries/modules to handle the actions being
 ### performed by the scraper.
+from distutils.spawn import find_executable
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 import pandas as pd
 import csv
-from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
+import time
 
 data = [] 
 itemsDF = pd.DataFrame(data)
@@ -39,15 +41,16 @@ driver.get('https://www.amazon.com/')
 ### Click on the See all deals link.
 driver.find_element(By.LINK_TEXT, 'Today\'s Deals').click()
 
+### Get the list of buttons to navigate from page to page.
+### The Next button is the last button in the list.
+buttonsContainerSelector = 'div[class="a-text-center notranslate"]'
+buttonsContainer = driver.find_element(By.CSS_SELECTOR, buttonsContainerSelector)
+buttonsList = buttonsContainer.find_elements(By.TAG_NAME, 'a')
+nextButton = buttonsList[-1]
+
 ### Use the number taken from the input file to loop through the pages in the Deals.
 ### NOTE: Remember that the landing page on the Deals section is page #1.
-for page in range(int(numberOfPages)):
-
-    ### Scroll down to where the Next button is visible.
-    nextButton = driver.find_element(By.LINK_TEXT, 'Next')
-    actions = ActionChains(driver)
-    actions.move_to_element(nextButton).perform()
-
+for page in range(1, int(numberOfPages)+1):
     ### Find and get the container that holds the deals in the page.
     mainDealsContainerSelector = 'div[data-testid="grid-deals-container"]'
     mainDealsContainer = driver.find_element(By.CSS_SELECTOR, mainDealsContainerSelector)
@@ -72,6 +75,9 @@ for page in range(int(numberOfPages)):
                 prices.append(span.text)
 
             data.append([prices[0], prices[1], itemDescription.text])
+
+    ### Click on the next button.
+    nextButton.click()
                 
 ### Close browser.
 driver.close()
