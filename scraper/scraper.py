@@ -1,17 +1,15 @@
 ### Import all necessary selenium, webdriver and other libraries/modules to handle the actions being
 ### performed by the scraper.
-from distutils.spawn import find_executable
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 import pandas as pd
 import csv
-from selenium.webdriver.common.keys import Keys
-import time
+from selenium.webdriver.common.action_chains import ActionChains
 
 data = [] 
-itemsDF = pd.DataFrame(data)
+# itemsDF = pd.DataFrame(data)
 
 ### From the input file, read the number of pages to go through in the Today's Deals section.
 with open('input//input_numberOfPages.csv', 'r') as inputFile:
@@ -50,7 +48,13 @@ nextButton = buttonsList[-1]
 
 ### Use the number taken from the input file to loop through the pages in the Deals.
 ### NOTE: Remember that the landing page on the Deals section is page #1.
-for page in range(1, int(numberOfPages)+1):
+for page in range(int(numberOfPages)+1):
+    ### Instantiate an actionsChains object.
+    actions = ActionChains(driver) 
+
+    ### Bring the deal element into view.
+    actions.move_to_element(nextButton).perform()
+
     ### Find and get the container that holds the deals in the page.
     mainDealsContainerSelector = 'div[data-testid="grid-deals-container"]'
     mainDealsContainer = driver.find_element(By.CSS_SELECTOR, mainDealsContainerSelector)
@@ -66,18 +70,37 @@ for page in range(1, int(numberOfPages)+1):
     for deal in dealCards:
         itemDescription = deal.find_element(By.CSS_SELECTOR, itemDescriptionSelector) 
         spans = deal.find_elements(By.CSS_SELECTOR, itemPricesSelector)
+
+        ### Instantiate a list where pricess will store temporarily.
+        prices = [] 
+        for span in spans:
+            ### Bring the deal element into view.
+            actions.move_to_element(deal).perform()
+
+            ## Create a list of the items being scraped.
+            prices.append(span.text)
+
+        ### Check if there's a deal price and a list/was price.
         if len(spans) == 2:
-            ### Instantiate a list where pricess will store temporarily.
+             data.append([(page+1), prices[0], prices[1], itemDescription.text])
+                
+        ### Some deals show 3 prices, a deal price, a packet/count price and a list/was price.
+        ### For this scenario, I am not interested in packet/count price.
+        elif len(spans) == 3:
+            data.append([(page+1), prices[0], prices[2], itemDescription.text])
 
-            prices = [] 
-            for span in spans:
-                ## Create a list of the items being scraped.
-                prices.append(span.text)
-
-            data.append([prices[0], prices[1], itemDescription.text])
 
     ### Click on the next button.
     nextButton.click()
-                
+
+### Create a pandas dataframe using the data obtained from the Today's Deals page.
+dealsDF = pd.DataFrame(data)
+
+### Add column names to the dataframe.
+dealsDF.columns = ['page', 'dealPrice', 'originalPrice', 'itemDescription']
+
+### Save dataframe in the output folder as a CSV file named todaysdeals.csv.
+dealsDF.to_csv('output/todaysdeals.csv', index=False)
+
 ### Close browser.
 driver.close()
