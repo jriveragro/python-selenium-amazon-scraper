@@ -15,6 +15,6 @@ NOTE: Installing and configuration of Python and VS Code is not detailed in this
 6. To install Pandas, go back to the terminal, and type: pip install pandas.
 
 > Project objective:
-This project has been developed as a tool to scrape data from items shown/sold in the Today's Deals section of Amazon.com. The script in this project reads from the input CSV file the number of pages to go through and, for the items that show a price, get the deal price, list price (sometimes shown as 'was') and description, then uses pandas to create a dataframe which, and finally writes the data found to the output CSV file.
+This project has been developed as a tool to scrape data from items shown/sold in the Today's Deals section of Amazon.com. The script in this project reads from the input CSV file the number of pages to go through and, for the items that show a price, get the deal price, list price (sometimes shown as 'was') and description, then the data that has been collected into a list is used to create a pandas dataframe from which a CSV file is created and placed in the output folder.
 
 
